@@ -1,7 +1,8 @@
 pipeline {
     agent { 
         node {
-            label 'jenkins-agent-goes-here'
+            // 젠킨스에서 설정한 node(cloud) 라벨이름 작성.
+            label 'docker-agent-python'
             }
       }
     stages {

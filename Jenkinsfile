@@ -5,7 +5,8 @@ pipeline {
             }
       }
     triggers {
-        pollSCM '* * * * *'
+        // 5분 마다 git 에 새로운 코드가 있으면 빌드를 실행함.
+        pollSCM '*/5 * * * *'
     }
     stages {
         stage('Build') {
@@ -24,6 +25,7 @@ pipeline {
                 cd myapp
                 python3 hello.py
                 python3 hello.py --name=Brad
+                echo "doing build.."
                 '''
             }
         }

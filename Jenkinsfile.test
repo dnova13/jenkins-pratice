@@ -1,0 +1,73 @@
+pipeline {
+    agent none
+    stages {     
+        stage('Maven Install') {
+            agent {         
+                docker {          
+                    image 'maven:3.5.0'         
+                }       
+            }       
+            steps {
+                sh 'mvn clean install'
+            }
+        }   
+   }
+}
+
+---
+
+pipeline {
+  agent {
+    docker { image 'node:16-alpine' }
+  }
+  stages {
+    stage('Test') {
+      steps {
+        sh 'node --version'
+      }
+    }
+  }
+}
+
+---
+
+pipeline {
+  agent {
+    docker { 
+      image 'node:16-alpine' 
+      args '--entrypoint="" --user root -v /var/run/docker.sock:/var/run/docker.sock'
+
+    }
+  }
+  stages {
+    stage('Test') {
+      steps {
+        sh 'node --version'
+      }
+    }
+  }
+}
+
+
+
+pipeline {
+  agent none
+  stages {
+    stage('Back-end') {
+      agent {
+        docker { image 'maven:3.8.1-adoptopenjdk-11' }
+      }
+      steps {
+        sh 'mvn --version'
+      }
+    }
+    stage('Front-end') {
+      agent {
+        docker { image 'node:16-alpine' }
+      }
+      steps {
+        sh 'node --version'
+      }
+    }
+  }
+}

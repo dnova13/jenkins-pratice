@@ -4,8 +4,8 @@ For the full 1 hour course watch on youtube:
 https://www.youtube.com/watch?v=6YZvp2GwT0A
 
 ## REF GIT Link
-https://github.com/devopsjourney1/jenkins-101
 
+https://github.com/devopsjourney1/jenkins-101
 
 # Installation
 
@@ -42,6 +42,15 @@ docker run --name jenkins-2.41 --restart=on-failure --detach \
   --publish 8080:8080 --publish 50000:50000 \
   myjenkins:2.41
 
+
+docker run --name jenkins-2.41 --restart=on-failure --detach \
+  --network jenkins --env DOCKER_HOST=tcp://docker:2376 \
+  --env DOCKER_CERT_PATH=/certs/client --env DOCKER_TLS_VERIFY=1 \
+  --volume ./data/jenkins-2.41:/var/jenkins_home \
+  --volume ./certs/jenkins-2.41:/certs/client:ro \
+  --publish 8080:8080 --publish 50000:50000 \
+  myjenkins:2.41
+
 docker run --name jenkins-2.45 --restart=on-failure --detach \
   --network jenkins --env DOCKER_HOST=tcp://docker:2376 \
   --env DOCKER_CERT_PATH=/certs/client --env DOCKER_TLS_VERIFY=1 \
@@ -50,12 +59,26 @@ docker run --name jenkins-2.45 --restart=on-failure --detach \
   --publish 8080:8080 --publish 50000:50000 \
   myjenkins:2.45
 
+
+### 도커 소켓 공유 (리눅스 용)
+--volume /var/run/docker.sock:/var/run/docker.sock \
+
+# 로컬과 볼륨 동기화
+docker run --name jenkins-2.45-test --restart=on-failure --detach \
+  --network jenkins --env DOCKER_HOST=tcp://docker:2376 \
+  --env DOCKER_CERT_PATH=/certs/client --env DOCKER_TLS_VERIFY=1 \
+  --volume ./data/jenkins-2.45/:/var/jenkins_home \
+  --volume ./certs/jenkins-2.45/:/certs/client:ro \
+  --publish 8082:8080 --publish 50000:50000 \
+  myjenkins:2.45
+
+
 docker run --name jenkins-lts --restart=on-failure --detach \
   --network jenkins --env DOCKER_HOST=tcp://docker:2376 \
   --env DOCKER_CERT_PATH=/certs/client --env DOCKER_TLS_VERIFY=1 \
   --volume jenkins-data-lts:/var/jenkins_home \
   --volume jenkins-docker-certs-lts:/certs/client:ro \
-  --publish 8080:8080 --publish 50000:50000 \
+  --publish 8082:8080 --publish 50002:50000 \
   myjenkins:lts
 ```
 
@@ -107,11 +130,23 @@ https://www.jenkins.io/doc/book/installing/docker/
 https://stackoverflow.com/questions/47709208/how-to-find-docker-host-uri-to-be-used-in-jenkins-docker-plugin
 
 ```
-docker run -d --restart=always -p 127.0.0.1:2376:2375 --name jenkins-socat --network jenkins -v /var/run/docker.sock:/var/run/docker.sock alpine/socat tcp-listen:2375,fork,reuseaddr unix-connect:/var/run/docker.sock
+### 원본
+docker run -d --restart=always -p 127.0.0.1:2376:2375 \
+--name jenkins-socat --network jenkins \
+-v /var/run/docker.sock:/var/run/docker.sock \
+alpine/socat tcp-listen:2375,fork,reuseaddr unix-connect:/var/run/docker.sock
+
+
+# -v /var/run/docker.sock:/var/run/docker.sock \
+
 
 docker inspect jenkins-socat | grep IPAddress
 
 docker inspect <container_id> | grep IPAddress
+
+
+tcp://172.17.0.2:2375
+tcp://172.21.0.4:2375
 ```
 
 ## Using my Jenkins Python Agent
@@ -119,3 +154,20 @@ docker inspect <container_id> | grep IPAddress
 ```
 docker pull devopsjourney1/myjenkinsagents:python
 ```
+
+docker volume inspect jenkins-data-2.45
+docker cp <컨테이너 이름 또는 ID>:<컨테이너 내부의 파일 경로> <호스트 시스템의 대상 경로>
+
+docker cp jenkins-2.45:/var/jenkins_home ./data/jenkins-2.45
+docker cp jenkins-2.45:/certs/client ./certs/jenkins-2.45
+
+docker run --privileged --name some-docker -d \
+-e DOCKER_TLS_CERTDIR=/certs \
+ -v some-docker-certs-ca:/certs/ca \
+ -v some-docker-certs-client:/certs/client \
+ docker:dind
+
+jenkins/agent:jdk17
+
+dnova13/docker-agent
+dnova13/jenkins-agent-docker

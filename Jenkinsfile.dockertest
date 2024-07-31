@@ -2,7 +2,7 @@ pipeline {
     agent { 
         node {
             // 젠킨스에서 설정한 node(cloud) 라벨이름 작성.
-            label 'docker-agent-python'
+            label 'docker-agent-withdocker'
             }
       }
     stages {
@@ -11,6 +11,8 @@ pipeline {
                 echo "Building.."
                 sh '''
                 echo "doing build stuff.."
+                docker version
+                docker ps                
                 '''
             }
         }

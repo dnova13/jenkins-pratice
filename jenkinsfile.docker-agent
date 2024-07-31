@@ -1,0 +1,12 @@
+pipeline {
+    agent {
+        label 'agent-in-docker'
+    }
+    stages {
+        stage('Test') {
+            steps {
+                sh 'docker run hello-world'
+            }
+        }
+    }
+}

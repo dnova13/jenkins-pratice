@@ -1,0 +1,104 @@
+pipeline {
+    agent {
+        docker {
+            image 'dnova13/docker-agent'
+            args '-v /var/run/docker.sock:/var/run/docker.sock -u root'
+        }
+    }
+    stages {
+        stage('Test') {
+            steps {
+                // sh 'docker run hello-world'
+                sh 'docker ps'
+            }
+        }
+        
+        stage('Git Clone') {
+            steps {
+                git branch: 'master',
+                    url: 'https://github.com/dnova13/node-server-sample.git'
+            }
+            
+            post {
+                success { 
+                    sh 'echo "Successfully Cloned Repository"'
+                }
+                failure {
+                    sh 'echo "Fail Cloned Repository"'
+                }
+            }    
+        }
+
+        stage('Generate .env file') {
+            steps {
+            	// gralew이 있어야됨. git clone해서 project를 가져옴.
+                sh '''
+                echo "DB_HOST=mariadb" >> .env
+                echo "DB_NAME=video-platform" >> .env
+                echo "DB_USER=root" >> .env
+                echo "DB_PASS=1234" >> .env
+                echo "DB_PORT=3306" >> .env
+                echo "DB_POOL=20" >> .env
+                echo "TIME_ZONE=Asia/Seoul" >> .env
+
+                cat .env 
+                '''
+            }
+        }
+
+        stage('Build') {
+            steps {
+            	// gralew이 있어야됨. git clone해서 project를 가져옴.
+                sh '''
+                docker compose up -d --build
+                '''
+            }
+            post {
+                success {
+                    echo 'docker build success'
+                }
+
+                failure {
+                    echo 'docker build failed'
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                docker compose down
+                // Stop and remove containers running hello-world image
+                // def helloWorldContainers = sh(script: 'docker ps -a -q --filter ancestor=hello-world', returnStdout: true).trim()
+                
+                // echo "Post stage - found containers: ${helloWorldContainers}"
+                
+                // if (helloWorldContainers) {
+                //     sh "docker rm -f ${helloWorldContainers} || true"
+                // }
+
+                // Stop and remove containers running jenkins/agent:alpine-jdk17 image
+                def jenkinsAgentContainers = sh(script: 'docker ps -a -q --filter ancestor=jenkins/agent:alpine-jdk17', returnStdout: true).trim()
+                
+                echo "Post stage - found containers: ${jenkinsAgentContainers}"
+                
+                if (jenkinsAgentContainers) {
+                    sh "docker rm -f ${jenkinsAgentContainers} || true"
+                }
+
+                // Remove hello-world image
+                // def helloWorldImages = sh(script: 'docker images -a -q hello-world', returnStdout: true).trim()
+                // if (helloWorldImages) {
+                //     sh 'docker rmi -f hello-world || true'
+                // }
+
+                // Remove jenkins/agent:alpine-jdk17 image
+                def jenkinsAgentImages = sh(script: 'docker images -a -q jenkins/agent:alpine-jdk17', returnStdout: true).trim()
+                if (jenkinsAgentImages) {
+                    sh 'docker rmi -f jenkins/agent:alpine-jdk17 || true'
+                }
+            }
+        }
+    }
+}

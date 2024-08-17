@@ -1,3 +1,4 @@
 data/*
 certs/*
 jenkins-101.zip
+node_modules
